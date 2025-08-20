@@ -307,8 +307,35 @@
                 const title = item.querySelector('title')?.textContent || 'Unknown Title';
                 const description = item.querySelector('description')?.textContent || '';
                 
-                const authorMatch = description.match(/author:\\s*([^<\\n]+)/i);
-                const author = authorMatch ? authorMatch[1].trim() : 'Unknown Author';
+                // Try multiple patterns to extract author
+                let author = 'Unknown Author';
+                
+                // Pattern 1: author: AuthorName
+                let authorMatch = description.match(/author:\s*([^<\n\r]+)/i);
+                if (authorMatch) {
+                    author = authorMatch[1].trim();
+                } else {
+                    // Pattern 2: by AuthorName (common in titles)
+                    authorMatch = title.match(/by\s+([^<\n\r]+)/i);
+                    if (authorMatch) {
+                        author = authorMatch[1].trim();
+                    } else {
+                        // Pattern 3: Look for author in HTML content
+                        authorMatch = description.match(/>([^<]+)<\/a>\s*\(Author\)/i);
+                        if (authorMatch) {
+                            author = authorMatch[1].trim();
+                        } else {
+                            // Pattern 4: Extract from book info section
+                            authorMatch = description.match(/book author:\s*([^<\n\r]+)/i);
+                            if (authorMatch) {
+                                author = authorMatch[1].trim();
+                            }
+                        }
+                    }
+                }
+                
+                // Clean up author name
+                author = author.replace(/^\s*by\s+/i, '').replace(/\s*\(.*?\)\s*$/, '').trim();
                 
                 let status = 'Read';
                 if (description.includes('currently-reading')) status = 'Currently Reading';
@@ -318,7 +345,7 @@
                 let coverImage = null;
                 if (coverMatch) {
                     coverImage = coverMatch[1];
-                    coverImage = coverImage.replace(/\\._SX\\d+_/, '._SX98_').replace(/\\._SY\\d+_/, '._SY160_');
+                    coverImage = coverImage.replace(/\._SX\d+_/, '._SX98_').replace(/\._SY\d+_/, '._SY160_');
                 }
                 
                 books.push({
