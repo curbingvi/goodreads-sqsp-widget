@@ -11,7 +11,7 @@
         defaultView: 'grid' // Changed to grid default
     };
     
-    // Inject CSS styles
+      // Inject CSS styles
     function injectStyles() {
         const css = `
             .goodreads-widget {
@@ -290,7 +290,6 @@
         const styleSheet = document.createElement('style');
         styleSheet.type = 'text/css';
         styleSheet.textContent = css;
-        styleSheet.setAttribute('data-goodreads-widget', 'true');
         document.head.appendChild(styleSheet);
     }
 
@@ -681,3 +680,5 @@
     window.addEventListener('load', function() {
         setTimeout(autoInitialize, 100);
     });
+
+})();
