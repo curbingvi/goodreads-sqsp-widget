@@ -26,6 +26,7 @@
                 flex-direction: column;
                 min-height: 300px;
                 font-family: inherit; /* Inherit from parent website */
+                border: 2px solid rgb(255, 207, 249);
             }
 
             .goodreads-widget .widget-header {
@@ -69,9 +70,9 @@
 
             .goodreads-widget .toggle-btn {
                 padding: 5px 10px;
-                border: 1px solid #382110;
+                border: 1px solid #c80baf;
                 background: white;
-                color: #382110;
+                color: rgb(65, 65, 65);
                 border-radius: 3px;
                 font-size: 12px;
                 cursor: pointer;
@@ -79,11 +80,11 @@
             }
 
             .goodreads-widget .toggle-btn:hover {
-                background: #f0f0f0;
+                background: rgb(255, 207, 249);
             }
 
             .goodreads-widget .toggle-btn.active {
-                background: #382110;
+                background: #c80baf;
                 color: white;
             }
 
