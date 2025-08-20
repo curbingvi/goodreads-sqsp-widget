@@ -441,7 +441,7 @@
                         <div class="widget-header">
                             <div class="widget-header-left">
                                 <div class="goodreads-logo">G</div>
-                                <div class="widget-title">My Reading</div>
+                                <div class="widget-title">On my shelf</div>
                             </div>
                         </div>
                         <div class="widget-content">
@@ -460,7 +460,7 @@
                     <div class="widget-header">
                         <div class="widget-header-left">
                             <div class="goodreads-logo">G</div>
-                            <div class="widget-title">My Reading</div>
+                            <div class="widget-title">On my shelf</div>
                         </div>
                         ${showToggle ? `
                             <div class="view-toggle">
@@ -540,7 +540,7 @@
                         <div class="widget-header">
                             <div class="widget-header-left">
                                 <div class="goodreads-logo">G</div>
-                                <div class="widget-title">My Reading</div>
+                                <div class="widget-title">On my shelf</div>
                             </div>
                         </div>
                         <div class="widget-content">
