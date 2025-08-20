@@ -441,7 +441,7 @@
                         <div class="widget-header">
                             <div class="widget-header-left">
                                 <div class="goodreads-logo">G</div>
-                                <div class="widget-title">On my shelf</div>
+                                <div class="widget-title">My Reading</div>
                             </div>
                         </div>
                         <div class="widget-content">
@@ -460,7 +460,7 @@
                     <div class="widget-header">
                         <div class="widget-header-left">
                             <div class="goodreads-logo">G</div>
-                            <div class="widget-title">On my shelf</div>
+                            <div class="widget-title">My Reading</div>
                         </div>
                         ${showToggle ? `
                             <div class="view-toggle">
@@ -511,40 +511,112 @@
             }
         },
 
-        loadWidget: async function(containerId, config) {
+        loadWidget: async function(containerId, config, retryCount = 0) {
             const container = document.getElementById(containerId);
             if (!container) {
                 console.error('Goodreads Widget: Container not found:', containerId);
                 return;
             }
 
-            container.innerHTML = '<div class="goodreads-widget"><div class="widget-content"><div class="loading">Loading your books from Goodreads...</div></div></div>';
+            // Show loading state
+            container.innerHTML = `
+                <div class="goodreads-widget">
+                    <div class="widget-header">
+                        <div class="widget-header-left">
+                            <div class="goodreads-logo">G</div>
+                            <div class="widget-title">My Reading</div>
+                        </div>
+                    </div>
+                    <div class="widget-content">
+                        <div class="loading">Loading books from Goodreads...</div>
+                    </div>
+                </div>
+            `;
             
             try {
                 const rssUrl = `https://www.goodreads.com/review/list_rss/${config.userId}`;
-                const response = await fetch(this.CORS_PROXY + encodeURIComponent(rssUrl));
+                
+                // Add timeout to fetch request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
+                const response = await fetch(this.CORS_PROXY + encodeURIComponent(rssUrl), {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch RSS feed');
+                    throw new Error(`HTTP ${response.status}: Failed to fetch RSS feed`);
                 }
                 
                 const xmlText = await response.text();
+                
+                // Check if we got valid XML
+                if (!xmlText || xmlText.trim().length === 0) {
+                    throw new Error('Empty response from RSS feed');
+                }
+                
                 const books = this.parseGoodreadsRSS(xmlText, config.maxBooks);
+                
+                if (books.length === 0) {
+                    // Still show the widget structure even with no books
+                    container.innerHTML = `
+                        <div class="goodreads-widget">
+                            <div class="widget-header">
+                                <div class="widget-header-left">
+                                    <div class="goodreads-logo">G</div>
+                                    <div class="widget-title">My Reading</div>
+                                </div>
+                            </div>
+                            <div class="widget-content">
+                                <div class="loading">No books found. Make sure your Goodreads profile is public.</div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
                 
                 this.createWidget(containerId, books, config);
                 
             } catch (error) {
                 console.error('Error loading Goodreads data:', error);
+                
+                // Retry logic - try up to 2 more times with delays
+                if (retryCount < 2) {
+                    container.innerHTML = `
+                        <div class="goodreads-widget">
+                            <div class="widget-header">
+                                <div class="widget-header-left">
+                                    <div class="goodreads-logo">G</div>
+                                    <div class="widget-title">My Reading</div>
+                                </div>
+                            </div>
+                            <div class="widget-content">
+                                <div class="loading">Retrying... (${retryCount + 1}/2)</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Wait before retry (2 seconds, then 5 seconds)
+                    const delay = retryCount === 0 ? 2000 : 5000;
+                    setTimeout(() => {
+                        this.loadWidget(containerId, config, retryCount + 1);
+                    }, delay);
+                    return;
+                }
+                
+                // Final error state after all retries
                 container.innerHTML = `
                     <div class="goodreads-widget">
                         <div class="widget-header">
                             <div class="widget-header-left">
                                 <div class="goodreads-logo">G</div>
-                                <div class="widget-title">On my shelf</div>
+                                <div class="widget-title">My Reading</div>
                             </div>
                         </div>
                         <div class="widget-content">
-                            <div class="loading">Error loading books. Please check that your Goodreads profile is public.</div>
+                            <div class="loading">Unable to load books right now. Please try refreshing the page.</div>
                         </div>
                     </div>
                 `;
