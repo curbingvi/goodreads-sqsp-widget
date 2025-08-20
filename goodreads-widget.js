@@ -463,6 +463,10 @@
             const widgetHTML = `
                 <div class="goodreads-widget">
                     <div class="widget-header">
+                        <div class="widget-header-left">
+                            <div class="goodreads-logo">G</div>
+                            <div class="widget-title">My Reading</div>
+                        </div>
                         ${showToggle ? `
                             <div class="view-toggle">
                                 <button class="toggle-btn ${config.defaultView === 'list' ? 'active' : ''}" data-view="list">List</button>
@@ -625,28 +629,6 @@
         }
     };
 
-    // Initialization function that handles multiple scenarios
-    function initializeWidgets() {
-        const autoElements = document.querySelectorAll('[data-goodreads-widget]');
-        autoElements.forEach(element => {
-            // Skip if already initialized (check for existing widget content)
-            if (element.querySelector('.goodreads-widget')) {
-                return;
-            }
-            
-            const config = {
-                userId: element.getAttribute('data-user-id') || defaultConfig.userId,
-                autoRefreshMinutes: parseInt(element.getAttribute('data-auto-refresh')) || defaultConfig.autoRefreshMinutes,
-                maxBooks: parseInt(element.getAttribute('data-max-books')) || defaultConfig.maxBooks,
-                defaultView: element.getAttribute('data-default-view') || defaultConfig.defaultView,
-                showListView: element.getAttribute('data-show-list') !== 'false',
-                showGridView: element.getAttribute('data-show-grid') !== 'false'
-            };
-            
-            window.GoodreadsWidget.init(element.id, config);
-        });
-    }
-
     // Public API
     window.GoodreadsWidget = {
         init: function(containerId, userConfig = {}) {
@@ -655,6 +637,7 @@
             // Inject styles once
             if (!document.querySelector('style[data-goodreads-widget]')) {
                 injectStyles();
+                document.querySelector('style:last-of-type').setAttribute('data-goodreads-widget', 'true');
             }
             
             // Load widget
@@ -669,30 +652,32 @@
         }
     };
 
-    // Enhanced initialization that handles different loading scenarios
-    function setupInitialization() {
-        // Try immediate initialization if DOM is already ready
-        if (document.readyState === 'loading') {
-            // DOM is still loading
-            document.addEventListener('DOMContentLoaded', initializeWidgets);
-        } else {
-            // DOM is already loaded (interactive or complete)
-            initializeWidgets();
-        }
-        
-        // Also listen for the load event in case there are any remaining resources
-        if (document.readyState !== 'complete') {
-            window.addEventListener('load', function() {
-                // Small delay to ensure any dynamically created elements are ready
-                setTimeout(initializeWidgets, 100);
-            });
-        }
-        
-        // Fallback: Try initialization after a short delay
-        setTimeout(initializeWidgets, 250);
+    // Auto-initialize function with better timing handling
+    function autoInitialize() {
+        const autoElements = document.querySelectorAll('[data-goodreads-widget]');
+        autoElements.forEach(element => {
+            const config = {
+                userId: element.getAttribute('data-user-id') || defaultConfig.userId,
+                autoRefreshMinutes: parseInt(element.getAttribute('data-auto-refresh')) || defaultConfig.autoRefreshMinutes,
+                maxBooks: parseInt(element.getAttribute('data-max-books')) || defaultConfig.maxBooks,
+                defaultView: element.getAttribute('data-default-view') || defaultConfig.defaultView,
+                showListView: element.getAttribute('data-show-list') !== 'false',
+                showGridView: element.getAttribute('data-show-grid') !== 'false'
+            };
+            
+            window.GoodreadsWidget.init(element.id, config);
+        });
     }
 
-    // Initialize
-    setupInitialization();
+    // Enhanced initialization - only change from original
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoInitialize);
+    } else {
+        // DOM is already loaded
+        autoInitialize();
+    }
 
-})();
+    // Fallback for edge cases
+    window.addEventListener('load', function() {
+        setTimeout(autoInitialize, 100);
+    });
