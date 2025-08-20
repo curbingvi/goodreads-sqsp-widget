@@ -16,9 +16,9 @@
         const css = `
             .goodreads-widget {
                 background: white;
-                border-radius: 8px;
+                border-radius: 48px;
                 padding: 20px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                box-shadow:  rgb(255, 207, 249) 7px 6px 0px 2px;
                 width: 100%;
                 height: 100%;
                 box-sizing: border-box;
@@ -34,7 +34,6 @@
                 justify-content: space-between;
                 margin-bottom: 15px;
                 padding-bottom: 10px;
-                border-bottom: 2px solid #382110;
                 flex-shrink: 0;
             }
 
@@ -279,6 +278,10 @@
                 .goodreads-widget .toggle-btn {
                     padding: 4px 8px;
                     font-size: 11px;
+                    color: rgb (200,11,175)
+                    border-color: rgb (200,11,175);
+                    transition: 250ms ease;
+                    
                 }
             }
         `;
@@ -286,6 +289,7 @@
         const styleSheet = document.createElement('style');
         styleSheet.type = 'text/css';
         styleSheet.textContent = css;
+        styleSheet.setAttribute('data-goodreads-widget', 'true');
         document.head.appendChild(styleSheet);
     }
 
@@ -458,10 +462,6 @@
             const widgetHTML = `
                 <div class="goodreads-widget">
                     <div class="widget-header">
-                        <div class="widget-header-left">
-                            <div class="goodreads-logo">G</div>
-                            <div class="widget-title">My Reading</div>
-                        </div>
                         ${showToggle ? `
                             <div class="view-toggle">
                                 <button class="toggle-btn ${config.defaultView === 'list' ? 'active' : ''}" data-view="list">List</button>
@@ -624,6 +624,28 @@
         }
     };
 
+    // Initialization function that handles multiple scenarios
+    function initializeWidgets() {
+        const autoElements = document.querySelectorAll('[data-goodreads-widget]');
+        autoElements.forEach(element => {
+            // Skip if already initialized (check for existing widget content)
+            if (element.querySelector('.goodreads-widget')) {
+                return;
+            }
+            
+            const config = {
+                userId: element.getAttribute('data-user-id') || defaultConfig.userId,
+                autoRefreshMinutes: parseInt(element.getAttribute('data-auto-refresh')) || defaultConfig.autoRefreshMinutes,
+                maxBooks: parseInt(element.getAttribute('data-max-books')) || defaultConfig.maxBooks,
+                defaultView: element.getAttribute('data-default-view') || defaultConfig.defaultView,
+                showListView: element.getAttribute('data-show-list') !== 'false',
+                showGridView: element.getAttribute('data-show-grid') !== 'false'
+            };
+            
+            window.GoodreadsWidget.init(element.id, config);
+        });
+    }
+
     // Public API
     window.GoodreadsWidget = {
         init: function(containerId, userConfig = {}) {
@@ -632,7 +654,6 @@
             // Inject styles once
             if (!document.querySelector('style[data-goodreads-widget]')) {
                 injectStyles();
-                document.querySelector('style:last-of-type').setAttribute('data-goodreads-widget', 'true');
             }
             
             // Load widget
@@ -647,21 +668,30 @@
         }
     };
 
-    // Auto-initialize if data attributes are found
-    document.addEventListener('DOMContentLoaded', function() {
-        const autoElements = document.querySelectorAll('[data-goodreads-widget]');
-        autoElements.forEach(element => {
-            const config = {
-                userId: element.getAttribute('data-user-id') || defaultConfig.userId,
-                autoRefreshMinutes: parseInt(element.getAttribute('data-auto-refresh')) || defaultConfig.autoRefreshMinutes,
-                maxBooks: parseInt(element.getAttribute('data-max-books')) || defaultConfig.maxBooks,
-                defaultView: element.getAttribute('data-default-view') || defaultConfig.defaultView,
-                showListView: element.getAttribute('data-show-list') !== 'false',
-                showGridView: element.getAttribute('data-show-grid') !== 'false'
-            };
-            
-            window.GoodreadsWidget.init(element.id, config);
-        });
-    });
+    // Enhanced initialization that handles different loading scenarios
+    function setupInitialization() {
+        // Try immediate initialization if DOM is already ready
+        if (document.readyState === 'loading') {
+            // DOM is still loading
+            document.addEventListener('DOMContentLoaded', initializeWidgets);
+        } else {
+            // DOM is already loaded (interactive or complete)
+            initializeWidgets();
+        }
+        
+        // Also listen for the load event in case there are any remaining resources
+        if (document.readyState !== 'complete') {
+            window.addEventListener('load', function() {
+                // Small delay to ensure any dynamically created elements are ready
+                setTimeout(initializeWidgets, 100);
+            });
+        }
+        
+        // Fallback: Try initialization after a short delay
+        setTimeout(initializeWidgets, 250);
+    }
+
+    // Initialize
+    setupInitialization();
 
 })();
